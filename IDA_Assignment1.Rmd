@@ -43,21 +43,21 @@ z3 = rnorm(n,mu,sd)
 y1 = 1 + z1
 y2 = 5 + 2*z1 + z2
 
-## According to the condition
+## According to the condition, a=2, b=0
+## our condition becomes r = 2(y1-1), it is MAR
 r = a*(y1-1) + b*(y2-5) + z3
 
-# Find the indicator
-ind = which(r<0)
-y2_obs = y2[-ind]
-y2_mis = y2[ind]
+# Find the observed and missing values as required
+y2_obs = y2[r>=0]
+y2_mis = y2[r<0]
 
 #plotting the densities
 plot(density(y2), lwd = 2, col = "blue", xlab = expression(Y[2]),
 main = "Density", ylim = c(0, 0.7))
 lines(density(y2_obs), lwd = 2, col = "red")
-lines(density(y2_mis), lwd = 2, col = "darkgreen")
-legend(1, 0.7, legend = c("Complete data", "Observed data", "Missing data"),
-col = c("blue", "red", "darkgreen"), lty = c(1,1,1), lwd = c(2,2,2), bty ="n")
+#lines(density(y2_mis), lwd = 2, col = "darkgreen")
+legend(1, 0.7, legend = c("Complete data", "Observed data"),
+col = c("blue", "red"), lty = c(1,1), lwd = c(2,2), bty ="n")
 ```
 The above figure is the plot of density of complete data, observed data and missing data. By default, we set $a=2$ and $b=0$, which causes the missingness depends on the value of $Y_1$, which is **MAR**.
 
@@ -118,9 +118,9 @@ y2_mis = y2[ind]
 plot(density(y2), lwd = 2, col = "blue", xlab = expression(Y[2]),
 main = "Density", ylim = c(0, 0.7))
 lines(density(y2_obs), lwd = 2, col = "red")
-lines(density(y2_mis), lwd = 2, col = "darkgreen")
-legend(1, 0.7, legend = c("Complete data", "Observed data", "Missing data"),
-col = c("blue", "red", "darkgreen"), lty = c(1,1,1), lwd = c(2,2,2), bty ="n")
+#lines(density(y2_mis), lwd = 2, col = "darkgreen")
+legend(1, 0.7, legend = c("Complete data", "Observed data"),
+col = c("blue", "red"), lty = c(1,1,1), lwd = c(2,2,2), bty ="n")
 ```
 
 ## (d)
@@ -154,56 +154,47 @@ col = c("blue", "red"), lty = c(1,1), lwd = c(2,2), bty ="n")
 ## (a)
 First, we load the data
 ```{r,include = TRUE}
-
 load("databp.RData")
 ```
-The mean of the recovery time after removing the NAs is given as follow:
-```{r, echo=TRUE}
+The mean and the associated standard error of the recovery time after removing the NAs is given as follow:
+```{r, collapse=TRUE}
 # The mean of recovery time after removing the NAs 
-mean(databp$recovtime, na.rm = T) ##19.27273
-```
-and the associated standard error of recovery time is 
-```{r}
-sd(databp$recovtime, na.rm = T) ##12.20922
-
+print(paste("The mean of original data is", mean(databp$recovtime, na.rm = T))) #19.2727272727273
+print(paste("The standard error of original data is", sd(databp$recovtime, na.rm = T))) #12.2092151699008
 ```
 The Pearson correlations between the recovery
-time and the dose is given as 
+time and the dose and between blood pressure is given as 
 ```{r}
+## Between recovery time and dose
 cor(databp$recovtime, databp$logdose, use = "complete", method = "pearson") ##0.2391256
 
-```
-The Pearson correlations between the recovery
-time and the blood pressure is given as 
-```{r}
-cor(databp$recovtime, databp$bloodp, use = "complete", method = "pearson") ##-0.01952862
 
+## Between recovery time and bloop pressure
+cor(databp$recovtime, databp$bloodp, use = "complete", method = "pearson") ##-0.01952862
 ```
 
 ## (b)
 To conduct mean imputation, we first need to calculate the mean value of recovery time
 ```{r}
 m_recov = mean(databp$recovtime, na.rm = TRUE)
-m_recov
+m_recov #19.27273
 ```
 Then we substitute the NAs by the mean
 ```{r}
 recov_mi <- ifelse(is.na(databp$recovtime), m_recov, databp$recovtime)
-
-
 ```
 Since we just substitute the NAs by its mean, which would not change the global mean, so the mean after imputation remains the same
-```{r}
-mean(recov_mi)
-sd(recov_mi)
-
+```{r,collapse=T}
+print(paste("The mean of original data is", mean(databp$recovtime, na.rm = T))) # 19.27272
+print(paste("The standard error of original data is", sd(databp$recovtime, na.rm = T))) # 12.2092
+print(paste("The mean after mean imputation is", mean(recov_mi))) #19.27273
+print(paste("The standard error after mean imputation is", sd(recov_mi))) #11.42068
 ```
 We can see that the standard error after imputations is **11.42068**, which is lower than the original **12.20922**, which is the same as our conclusion that mean imputation would lower the standard error.
 The Pearson correlations between the recovery
 time after imputation and the dose is given by
 ```{r}
 cor(recov_mi, databp$logdose, use = "complete", method = "pearson") ##0.2150612
-
 ```
 We can see that the correlation also decreases from **0.2391256** to  **0.2150612**. The Pearson correlations between the recovery
 time after imputation and the blood pressure is given as 
@@ -224,12 +215,102 @@ predicted_ri <- predict(fit, newdata = databp)
 
 # Impute the SRI
 recov_ri <- ifelse(is.na(databp$recovtime), predicted_ri, databp$recovtime)
-
+```
+Then for the mean and standard after regression imputation
+```{r, collapse=T}
+print(paste("The mean of original data is", mean(databp$recovtime, na.rm = T))) # 19.2727
+print(paste("The standard error of original data is", sd(databp$recovtime, na.rm = T)))
+print(paste("The mean after regression imputation is", mean(recov_ri))) #19.4442
+print(paste("The standard error after regression imputation is", sd(recov_ri))) #11.5642
 ```
 
+The correlation after regression imputation is increased from **0.2150612** to **0.2801835**, which is also in the pattern of our conclusion of the regression imputation
+```{r}
+cor(recov_ri, databp$logdose, use = "complete", method = "pearson") 
+```
+The Pearson correlations between the recovery
+time after imputation and the blood pressure is given as 
+```{r}
+cor(recov_ri, databp$bloodp, use = "complete", method = "pearson") ##-0.01952862
+```
 
 ## (d)
+To conduct the stochastic regression imputation, we can use the model we build above, and add the residual terms to add the variability.
+```{r}
+# The predict values for the NAs
+predicted_sri <- predict(fit, newdata = databp) + rnorm(nrow(databp), 0, sigma(fit))
+
+# Impute the SRI
+recov_sri <- ifelse(is.na(databp$recovtime), predicted_sri, databp$recovtime)
+
+```
+Then for the mean and standard after stochastic regression imputation
+```{r, collapse=T}
+print(paste("The mean of original data is", mean(databp$recovtime, na.rm = T))) # 19.2727
+print(paste("The standard error of original data is", sd(databp$recovtime, na.rm = T))) # 12.20921
+print(paste("The mean after stochastic regression imputation is", mean(recov_sri))) # 18.9825
+print(paste("The standard error after stochastic regression imputation is", sd(recov_sri))) # 12.1576
+```
+The correlation after stochastic regression imputation has dropped from **0.2150612** to **0.05836918**
+```{r}
+cor(recov_sri, databp$logdose, use = "complete", method = "pearson") # 0.05836918 
+```
+The Pearson correlations between the recovery
+time after imputation and the blood pressure is given as 
+```{r}
+cor(recov_sri, databp$bloodp, use = "complete", method = "pearson") ## -0.04563002
+```
 
 ## (e)
+Here we conduct the mean matching method to substitute the missing values. First we can use the predicted value in part (c)
+```{r}
+recov_ri
+
+# Obtain the index of NAs
+ind = which(is.na(databp$recovtime) == T)
+ind ## The index of the missing values
+recov_ri[ind]
+recov_obs = recov_ri[-ind]
+recov_pre = recov_ri[ind]
+```
+
+What we need to do then is to find the closest number in the observed value (measured in squared difference) as the donator for the missing values
+
+```{r}
+## Number of missing values
+n = length(ind)
+## Initialize the vector to store the index of the donars
+idoner = numeric(n)
+for (i in 1:n){
+  idoner[i] = which.min((recov_obs-recov_pre[i])^2)
+}
+
+doner = recov_obs[idoner]
+
+```
+And we can compare the donars to our original predicted values to see whether they are close
+```{r}
+doner # 14 22 28
+recov_pre # 14.26254 21.51562 26.32896
+
+```
+So we replace the predicted value by the donars
+```{r}
+recov_pmm = recov_ri
+recov_pmm[ind] = doner
+recov_pmm
+```
 
 ## (f)
+For the predictive mean matching method, all the missing values are substituted by the observed values, which can avoid the implausible values.
+
+One of the potential problem is that when there are too many missing values or the pattern of observed values is almost identical, the standard error of the results would be extremely small, which lost the variability of the data.
+
+
+
+
+
+
+
+
+
