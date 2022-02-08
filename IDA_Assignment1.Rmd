@@ -1,9 +1,12 @@
 ---
 title: "Incomplete Data Analysis"
-subtitle: "Assignment 1"
 author: "Xuetao Liu s2257397"
 date: "2022/2/2"
-output: pdf_document
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+subtitle: Assignment 1
 ---
 
 ```{r setup, include=FALSE}
@@ -48,8 +51,9 @@ y2 = 5 + 2*z1 + z2
 r = a*(y1-1) + b*(y2-5) + z3
 
 # Find the observed and missing values as required
-y2_obs = y2[r>=0]
-y2_mis = y2[r<0]
+ind = r<0
+y2_obs = y2[-ind]
+y2_mis = y2[ind]
 
 #plotting the densities
 plot(density(y2), lwd = 2, col = "blue", xlab = expression(Y[2]),
@@ -158,9 +162,11 @@ load("databp.RData")
 ```
 The mean and the associated standard error of the recovery time after removing the NAs is given as follow:
 ```{r, collapse=TRUE}
+# Number of non-missing values
+n_obs = sum(is.na(databp$recovtime) == F)
 # The mean of recovery time after removing the NAs 
 print(paste("The mean of original data is", mean(databp$recovtime, na.rm = T))) #19.2727272727273
-print(paste("The standard error of original data is", sd(databp$recovtime, na.rm = T))) #12.2092151699008
+print(paste("The standard error of original data is", sd(databp$recovtime, na.rm = T)/sqrt(n_obs))) #2.60301
 ```
 The Pearson correlations between the recovery
 time and the dose and between blood pressure is given as 
@@ -185,12 +191,11 @@ recov_mi <- ifelse(is.na(databp$recovtime), m_recov, databp$recovtime)
 ```
 Since we just substitute the NAs by its mean, which would not change the global mean, so the mean after imputation remains the same
 ```{r,collapse=T}
-print(paste("The mean of original data is", mean(databp$recovtime, na.rm = T))) # 19.27272
-print(paste("The standard error of original data is", sd(databp$recovtime, na.rm = T))) # 12.2092
+n = length(recov_mi)
 print(paste("The mean after mean imputation is", mean(recov_mi))) #19.27273
-print(paste("The standard error after mean imputation is", sd(recov_mi))) #11.42068
+print(paste("The standard error after mean imputation is", sd(recov_mi)/sqrt(n))) #2.284
 ```
-We can see that the standard error after imputations is **11.42068**, which is lower than the original **12.20922**, which is the same as our conclusion that mean imputation would lower the standard error.
+We can see that the standard error after imputations is **2.284**, which is lower than the original **2.603**, which is the same as our conclusion that mean imputation would lower the standard error.
 The Pearson correlations between the recovery
 time after imputation and the dose is given by
 ```{r}
@@ -218,15 +223,13 @@ recov_ri <- ifelse(is.na(databp$recovtime), predicted_ri, databp$recovtime)
 ```
 Then for the mean and standard after regression imputation
 ```{r, collapse=T}
-print(paste("The mean of original data is", mean(databp$recovtime, na.rm = T))) # 19.2727
-print(paste("The standard error of original data is", sd(databp$recovtime, na.rm = T)))
 print(paste("The mean after regression imputation is", mean(recov_ri))) #19.4442
-print(paste("The standard error after regression imputation is", sd(recov_ri))) #11.5642
+print(paste("The standard error after regression imputation is", sd(recov_ri)/sqrt(n))) #2.3128
 ```
 
 The correlation after regression imputation is increased from **0.2150612** to **0.2801835**, which is also in the pattern of our conclusion of the regression imputation
 ```{r}
-cor(recov_ri, databp$logdose, use = "complete", method = "pearson") 
+cor(recov_ri, databp$logdose, use = "complete", method = "pearson") ## 0.2801 
 ```
 The Pearson correlations between the recovery
 time after imputation and the blood pressure is given as 
@@ -246,10 +249,8 @@ recov_sri <- ifelse(is.na(databp$recovtime), predicted_sri, databp$recovtime)
 ```
 Then for the mean and standard after stochastic regression imputation
 ```{r, collapse=T}
-print(paste("The mean of original data is", mean(databp$recovtime, na.rm = T))) # 19.2727
-print(paste("The standard error of original data is", sd(databp$recovtime, na.rm = T))) # 12.20921
 print(paste("The mean after stochastic regression imputation is", mean(recov_sri))) # 18.9825
-print(paste("The standard error after stochastic regression imputation is", sd(recov_sri))) # 12.1576
+print(paste("The standard error after stochastic regression imputation is", sd(recov_sri)/sqrt(n))) # 2.704
 ```
 The correlation after stochastic regression imputation has dropped from **0.2150612** to **0.05836918**
 ```{r}
@@ -270,8 +271,10 @@ recov_ri
 ind = which(is.na(databp$recovtime) == T)
 ind ## The index of the missing values
 recov_ri[ind]
-recov_obs = recov_ri[-ind]
-recov_pre = recov_ri[ind]
+
+recov_obs_pre = predicted_ri[-ind] ## predicted value for the observed subjects
+recov_obs = recov_ri[-ind] ## Observed values
+recov_pre = recov_ri[ind] ## Predicted values for the missing subjects
 ```
 
 What we need to do then is to find the closest number in the observed value (measured in squared difference) as the donator for the missing values
@@ -282,7 +285,7 @@ n = length(ind)
 ## Initialize the vector to store the index of the donars
 idoner = numeric(n)
 for (i in 1:n){
-  idoner[i] = which.min((recov_obs-recov_pre[i])^2)
+  idoner[i] = which.min((recov_obs_pre-recov_pre[i])^2)
 }
 
 doner = recov_obs[idoner]
@@ -290,7 +293,7 @@ doner = recov_obs[idoner]
 ```
 And we can compare the donars to our original predicted values to see whether they are close
 ```{r}
-doner # 14 22 28
+doner # 13 10 39
 recov_pre # 14.26254 21.51562 26.32896
 
 ```
@@ -300,11 +303,26 @@ recov_pmm = recov_ri
 recov_pmm[ind] = doner
 recov_pmm
 ```
+Then for the mean and standard after predicted mean matching
+```{r, collapse=T}
+print(paste("The mean after stochastic regression imputation is", mean(recov_pmm))) # 19.44
+print(paste("The standard error after stochastic regression imputation is", sd(recov_pmm)/sqrt(n))) # 2.464
+```
+The correlation after predicted mean matching is
+```{r}
+cor(recov_pmm, databp$logdose, use = "complete", method = "pearson") # 0.3038
+```
+The Pearson correlations between the recovery
+time after imputation and the blood pressure is given as 
+```{r}
+cor(recov_pmm, databp$bloodp, use = "complete", method = "pearson") ## -0.0321
+```
+
 
 ## (f)
 For the predictive mean matching method, all the missing values are substituted by the observed values, which can avoid the implausible values.
 
-One of the potential problem is that when there are too many missing values or the pattern of observed values is almost identical, the standard error of the results would be extremely small, which lost the variability of the data.
+One of the potential problem is that when there are too many missing values(sparse) or the size of our data set is too small, the standard error of the results would be extremely small, which lost the variability of the data.
 
 
 
