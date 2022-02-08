@@ -231,7 +231,7 @@ cor(recov_ri, databp$logdose, use = "complete", method = "pearson")
 The Pearson correlations between the recovery
 time after imputation and the blood pressure is given as 
 ```{r}
-cor(recov_ri, databp$bloodp, use = "complete", method = "pearson") ##-0.01952862
+cor(recov_ri, databp$bloodp, use = "complete", method = "pearson") ## - 0.0111
 ```
 
 ## (d)
