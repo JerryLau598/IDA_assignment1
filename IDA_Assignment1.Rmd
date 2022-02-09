@@ -51,7 +51,7 @@ y2 = 5 + 2*z1 + z2
 r = a*(y1-1) + b*(y2-5) + z3
 
 # Find the observed and missing values as required
-ind = r<0
+ind = which(r<0)
 y2_obs = y2[-ind]
 y2_mis = y2[ind]
 
@@ -103,9 +103,9 @@ a = 0
 b = 2
 
 ## Generate the standard normal
-z1 = rnorm(n,mu,sd)
-z2 = rnorm(n,mu,sd)
-z3 = rnorm(n,mu,sd)
+#z1 = rnorm(n,mu,sd)
+#z2 = rnorm(n,mu,sd)
+#z3 = rnorm(n,mu,sd)
 
 y1 = 1 + z1
 y2 = 5 + 2*z1 + z2
