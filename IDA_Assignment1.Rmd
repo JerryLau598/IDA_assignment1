@@ -3,9 +3,9 @@ title: "Incomplete Data Analysis"
 author: "Xuetao Liu s2257397"
 date: "2022/2/2"
 output:
-  pdf_document: default
   html_document:
     df_print: paged
+  pdf_document: default
 subtitle: Assignment 1
 ---
 
@@ -29,22 +29,26 @@ But we do not know the probability of ALQ being missing, and thus we cannot know
 * The smallest subsample is that we have nothing left. In this case, the missing data has no intersection within subjects, e.g. subjects 1-10 lost variable 1, subjects 11-20 lost variable 2, ..., subjects 91-100 lost variable 10.
 
 # Question 3
-## (a)
-```{r,include = TRUE, message = FALSE}
+We first come to generate the $Z's$ and $y's$
+```{r}
 set.seed(1)
-n = 500
-mu = 0
-sd = 1
-a = 2
-b = 0
+n = 500; mu = 0; sd = 1
 
-## Generate the standard normal
+## Generate the Z's using standard normal
 z1 = rnorm(n,mu,sd)
 z2 = rnorm(n,mu,sd)
 z3 = rnorm(n,mu,sd)
 
+## Assign the values for y's as required
 y1 = 1 + z1
 y2 = 5 + 2*z1 + z2
+```
+
+## (a)
+```{r,include = TRUE, message = FALSE}
+
+# When a=2 and b=0
+a = 2; b = 0
 
 ## According to the condition, a=2, b=0
 ## our condition becomes r = 2(y1-1), it is MAR
@@ -90,25 +94,17 @@ legend(1, 0.7, legend = c("Complete data", "Completed data"),
 col = c("blue", "red"), lty = c(1,1), lwd = c(2,2), bty ="n")
 
 ```
+From the plot we can see that the completed data after stochastic regression imputation has relatively high correlation with the original data, since the density of these two curves overlap a lot.
+
 
 ## (c)
 
 Here we take $a=0$ and $b=2$, which makes the missingness become **MNAR**
 ```{r,include = TRUE, message = FALSE}
-set.seed(1)
-n = 500
-mu = 0
-sd = 1
+
+## When a=0 and b=2
 a = 0
 b = 2
-
-## Generate the standard normal
-#z1 = rnorm(n,mu,sd)
-#z2 = rnorm(n,mu,sd)
-#z3 = rnorm(n,mu,sd)
-
-y1 = 1 + z1
-y2 = 5 + 2*z1 + z2
 
 ## According to the condition
 r = a*(y1-1) + b*(y2-5) + z3
@@ -161,7 +157,7 @@ First, we load the data
 load("databp.RData")
 ```
 The mean and the associated standard error of the recovery time after removing the NAs is given as follow:
-```{r, collapse=TRUE}
+```{r}
 # Number of non-missing values
 n_obs = sum(is.na(databp$recovtime) == F)
 # The mean of recovery time after removing the NAs 
